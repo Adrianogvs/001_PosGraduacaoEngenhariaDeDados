@@ -1,0 +1,200 @@
+//Questão 01: Quantos concursos tivemos por mês?
+ db.lotofacil.aggregate([
+  {
+    $match: {
+      "Data Sorteio": { $exists: true, $ne: "" }
+    }
+  },
+  {
+    $project: {
+      month: {
+        $toInt: { $substr: [ "$Data Sorteio", 3, 2 ] }
+      }
+    }
+  },
+  {
+    $group: {
+      _id: "$month",
+      count: { $sum: 1 }
+    }
+  },
+  {
+    $project: {
+      _id: 0,
+      month: "$_id",
+      count: 1
+    }
+  },
+  {
+    $sort: {
+      month: 1
+    }
+  }
+])
+
+
+//Questão 02: – Quais os concursos tivemos em 2021?
+var result = db.lotofacil.find(
+  { "Data Sorteio": { $regex: ".*2021.*" } },
+  { Concurso: 1, _id: 0 }
+).toArray();
+result.forEach(function(doc) {
+  print(doc.Concurso);
+});
+
+
+//Questão 03: Quais os concursos que pagaram o prêmio principal para mais de um ganhador?
+db.lotofacil.aggregate([
+  {
+    $match: {
+      "Ganhadores_15_Números": { $gt: 1 }
+    }
+  },
+  {
+    $project: {
+      "_id": 0,
+      "Concurso": 1
+    }
+  },
+  {
+    $group: {
+      _id: null,
+      resultados: { $push: "$Concurso" },
+      total: { $sum: 1 }
+    }
+  },
+  {
+    $project: {
+      _id: 0,
+      resultados: 1,
+      total: 1
+    }
+  }
+])
+
+
+//Questão 4: – Quantos concursos pagaram o prêmio principal para mais de um ganhador?
+db.lotofacil.count({
+  "Ganhadores_15_Números": {
+    "$gt": 1
+  }
+})
+
+
+//Questão 5: Qual a média de ganhadores com 14, 13, 12 e 11 pontos?
+db.lotofacil.aggregate([
+  {
+    $group: {
+      _id: null,
+      media_11: { $avg: "$Ganhadores_11_Números" },
+      media_12: { $avg: "$Ganhadores_12_Números" },
+      media_13: { $avg: "$Ganhadores_13_Números" },
+      media_14: { $avg: "$Ganhadores_14_Números" },
+      media_15: { $avg: "$Ganhadores_15_Números" }
+    }
+  },
+  {
+    $project: {
+      _id: 0,
+      media_11: { $round: ["$media_11", 2] },
+      media_12: { $round: ["$media_12", 2] },
+      media_13: { $round: ["$media_13", 2] },
+      media_14: { $round: ["$media_14", 2] },
+      media_15: { $round: ["$media_15", 2] }
+    }
+  }
+])
+
+
+//Questão 06: Qual a média de ganhadores com 15 pontos que foram premiados em concursos com mais de 7 Milhões de prêmio principal?
+db.lotofacil.aggregate([
+  {
+    $match: {
+      Valor_Rateio_15_Números: {
+        $ne: ""
+      }
+    }
+  },
+  {
+    $addFields: {
+      Valor_Rateio_15_Números: {
+        $toDouble: {
+          $replaceAll: {
+            input: {
+              $replaceAll: {
+                input: {
+                  $replaceAll: {
+                    input: {
+                      $trim: {
+                        input: { $toString: "$Valor_Rateio_15_Números" }
+                      }
+                    },
+                    find: ".",
+                    replacement: ""
+                  }
+                },
+                find: ",",
+                replacement: "."
+              }
+            },
+            find: "R$",
+            replacement: ""
+          }
+        }
+      }
+    }
+  },
+  {
+    $addFields: {
+      Premio_Total_15_Números: {
+        $multiply: [
+          {
+            $toDouble: "$Valor_Rateio_15_Números"
+          },
+          { $toDouble: "$Ganhadores_15_Números" }
+        ]
+      }
+    }
+  },
+  {
+    $match: {
+      Premio_Total_15_Números: {
+        $gt: 7000000
+      }
+    }
+  },
+  {
+    $group: {
+      _id: null,
+      SomaGanhador_15: {
+        $sum: "$Ganhadores_15_Números"
+      },
+      MediaValorGanhador_15: {
+        $avg: "$Valor_Rateio_15_Números"
+      },
+      MediaGanhador_15: {
+        $avg: "$Ganhadores_15_Números"
+      }
+    }
+  },
+  {
+    $project: {
+      SomaGanhador_15: 1,
+      MediaValorGanhador_15: {
+        $round: ["$MediaValorGanhador_15", 2]
+      },
+      MediaGanhador_15: {
+        $round: ["$MediaGanhador_15", 0]
+      },
+      MediaDivisao: {
+        $divide: ["$MediaGanhador_15", "$SomaGanhador_15"]
+      }
+    }
+  },
+  {
+    $match: {
+      MediaValorGanhador_15: { $ne: NaN },
+      MediaGanhador_15: { $ne: NaN }
+    }
+  }
+]).pretty()
