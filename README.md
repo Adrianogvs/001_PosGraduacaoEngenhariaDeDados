@@ -1,7 +1,7 @@
 # **PUC Minas: Pós Graduação em Engenharia de Dados**
 
 <p align="center">
-    <img src="https://github.com/Adrianogvs/014-Pos-Graduacao-Engenharia-de-Dados/blob/main/image/informatica-e-tecnologia3.png" alt="Exemplo de imagem">
+    <img src="https://github.com/Adrianogvs/001_Postgraduate_Data_Engineering/blob/main/image/informatica-e-tecnologia3.png" alt="Exemplo de imagem">
 </p>
 
 
